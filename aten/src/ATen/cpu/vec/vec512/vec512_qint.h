@@ -42,7 +42,7 @@ namespace at {
 namespace vec {
 inline namespace CPU_CAPABILITY {
 
-#if defined(CPU_CAPABILITY_AVX512) && !defined(_MSC_VER)
+#if defined(CPU_CAPABILITY_AVX512)
 
 struct Vectorizedqi {
  protected:

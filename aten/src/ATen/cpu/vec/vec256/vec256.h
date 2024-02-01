@@ -69,7 +69,7 @@ std::ostream& operator<<(std::ostream& stream, const Vectorized<T>& vec) {
 }
 
 
-#if defined(CPU_CAPABILITY_AVX2) && !defined(_MSC_VER)
+#if defined(CPU_CAPABILITY_AVX2)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CAST (AVX2) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -302,6 +302,6 @@ inline Vectorized<uint8_t> flip(const Vectorized<uint8_t> & v) {
   return flip8(v);
 }
 
-#endif // (defined(CPU_CAPABILITY_AVX2) && !defined(_MSC_VER)
+#endif // (defined(CPU_CAPABILITY_AVX2)
 
 }} // namepsace at::vec::CPU_CAPABILITY
