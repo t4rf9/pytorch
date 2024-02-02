@@ -267,10 +267,11 @@ public:
   }
 
 #ifdef _MSC_VER
-  Vectorized<T> map(__m256 (* vop)(__m256)) const {
+#define SLEEF_CONST
 #else
-  Vectorized<T> map(const __m256 (const* vop)(__m256)) const {
+#define SLEEF_CONST const
 #endif
+  Vectorized<T> map(SLEEF_CONST __m256 (*SLEEF_CONST vop)(__m256)) const {
     __m256 lo, hi;
     cvt_to_fp32<T>(values, lo, hi);
     const auto o1 = vop(lo);
