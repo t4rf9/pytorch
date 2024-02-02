@@ -36,12 +36,6 @@
 #include <c10/util/irange.h>
 #include <c10/util/Load.h>
 
-#if defined(__GNUC__)
-#define __always_inline __attribute__((always_inline)) inline
-#elif defined(_MSC_VER)
-#define __always_inline __forceinline
-#endif
-
 // These macros helped us unify vec_base.h
 #ifdef CPU_CAPABILITY_AVX512
 #if defined(__GNUC__)

@@ -38,6 +38,12 @@
 // point operations will be carried out in a loop over Vectorized<T>::float_num_vecs
 // iterations.
 
+#if defined(__GNUC__)
+#define __always_inline __attribute__((always_inline)) inline
+#elif defined(_MSC_VER)
+#define __always_inline __forceinline
+#endif
+
 namespace at {
 namespace vec {
 inline namespace CPU_CAPABILITY {
