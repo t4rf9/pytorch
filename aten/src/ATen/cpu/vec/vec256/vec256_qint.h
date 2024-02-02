@@ -41,12 +41,6 @@
 namespace at::vec {
 inline namespace CPU_CAPABILITY {
 
-#if defined(__GNUC__)
-#define __FORCE_INLINE __attribute__((always_inline)) inline
-#elif defined(_MSC_VER)
-#define __FORCE_INLINE __forceinline
-#endif
-
 #if defined(CPU_CAPABILITY_AVX2)
 
 #ifdef _MSC_VER
