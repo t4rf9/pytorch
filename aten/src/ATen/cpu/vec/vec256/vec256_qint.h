@@ -43,9 +43,15 @@ inline namespace CPU_CAPABILITY {
 
 #if defined(CPU_CAPABILITY_AVX2)
 
+#ifdef _MSC_VER
+__declspec(align(64)) struct Vectorizedqi {
+ protected:
+  __m256i vals;
+#else
 struct Vectorizedqi {
  protected:
   __m256i vals __attribute__((aligned(64)));
+#endif
 
  public:
   Vectorizedqi() {}
@@ -133,7 +139,7 @@ inline convert_float_to_int8(at::vec::Vectorized<float> src) {
 }
 
 template <typename T>
-inline void __attribute__((always_inline)) QuantizeAvx2(
+__always_inline void QuantizeAvx2(
     const float* src,
     T* dst,
     int len,
