@@ -708,7 +708,7 @@ public:
     auto abs = abs_();
     auto zero = _mm512_setzero_ps();
     auto mask = _mm512_cmp_ps_mask(abs, zero, _CMP_EQ_OQ);
-    auto div = values / abs;
+    auto div = _mm512_div_ps(values, abs);
     return _mm512_mask_blend_ps(mask, div, zero);
   }
   __m512 real_() const {

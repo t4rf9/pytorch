@@ -203,7 +203,7 @@ public:
     auto abs = abs_();
     auto zero = _mm512_setzero_pd();
     auto mask = _mm512_cmp_pd_mask(abs, zero, _CMP_EQ_OQ);
-    auto div = values / abs;
+    auto div = _mm512_div_pd(values, abs);
     return _mm512_mask_blend_pd(mask, div, zero);
   }
   __m512d real_() const {

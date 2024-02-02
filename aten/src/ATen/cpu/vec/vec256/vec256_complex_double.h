@@ -145,7 +145,7 @@ public:
     auto abs = abs_();
     auto zero = _mm256_setzero_pd();
     auto mask = _mm256_cmp_pd(abs, zero, _CMP_EQ_OQ);
-    auto div = values / abs;
+    auto div = _mm256_div_pd(values, abs);
     return _mm256_blendv_pd(div, zero, mask);
   }
   __m256d real_() const {
