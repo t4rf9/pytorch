@@ -8,6 +8,7 @@
 #include <c10/util/irange.h>
 
 #if defined(CPU_CAPABILITY_AVX512) 
+#define SLEEF_STATIC_LIBS
 #include <sleef.h>
 #endif
 

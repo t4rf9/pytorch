@@ -9,6 +9,7 @@
 #include <ATen/cpu/vec/vec_base.h>
 
 #if defined(CPU_CAPABILITY_AVX2)
+#define SLEEF_STATIC_LIBS
 #include <sleef.h>
 #endif
 
