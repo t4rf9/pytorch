@@ -265,7 +265,13 @@ public:
     }
     return b;
   }
-  Vectorized<T> map(__m256 (* vop)(__m256)) const {
+#ifdef _MSC_VER
+#define SLEEF_CONST
+#else
+#define SLEEF_CONST const
+#endif
+
+  Vectorized<T> map(SLEEF_CONST __m256 (SLEEF_CONST* vop)(__m256)) const {
     __m256 lo, hi;
     cvt_to_fp32<T>(values, lo, hi);
     const auto o1 = vop(lo);

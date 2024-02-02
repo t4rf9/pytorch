@@ -38,14 +38,14 @@
 // point operations will be carried out in a loop over Vectorized<T>::float_num_vecs
 // iterations.
 
-#if defined(__GNUC__)
-#define __always_inline __attribute__((always_inline)) inline
-#elif defined(_MSC_VER)
-#define __always_inline __forceinline
-#endif
-
 namespace at::vec {
 inline namespace CPU_CAPABILITY {
+
+#if defined(__GNUC__)
+#define __FORCE_INLINE __attribute__((always_inline)) inline
+#elif defined(_MSC_VER)
+#define __FORCE_INLINE __forceinline
+#endif
 
 #if defined(CPU_CAPABILITY_AVX2)
 
@@ -145,7 +145,7 @@ inline convert_float_to_int8(at::vec::Vectorized<float> src) {
 }
 
 template <typename T>
-__always_inline void QuantizeAvx2(
+__FORCE_INLINE void QuantizeAvx2(
     const float* src,
     T* dst,
     int len,
