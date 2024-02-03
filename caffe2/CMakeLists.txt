@@ -1528,6 +1528,19 @@ if(MSVC AND BUILD_SHARED_LIBS)
   target_compile_options(torch_cpu PRIVATE "-DONNX_BUILD_MAIN_LIB")
 endif()
 
+if(MSVC)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build sleef static" FORCE)
+set(BUILD_DFT OFF CACHE BOOL "Don't build sleef DFT lib" FORCE)
+set(BUILD_GNUABI_LIBS OFF CACHE BOOL "Don't build sleef gnuabi libs" FORCE)
+set(BUILD_TESTS OFF CACHE BOOL "Don't build sleef tests" FORCE)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../third_party/sleef" ${CMAKE_BINARY_DIR}/sleef)
+
+target_include_directories(torch_cpu PUBLIC ${CMAKE_BINARY_DIR}/include)
+target_link_directories(torch_cpu PUBLIC ${CMAKE_BINARY_DIR}/sleef/lib)
+target_link_libraries(torch_cpu PUBLIC sleef)
+add_dependencies(torch_cpu sleef)
+endif()
+
 caffe2_interface_library(torch_cpu torch_cpu_library)
 
 if(USE_CUDA)
