@@ -7,7 +7,7 @@
 #include <ATen/cpu/vec/vec_base.h>
 #include <c10/util/irange.h>
 
-#if defined(CPU_CAPABILITY_AVX512) 
+#if defined(CPU_CAPABILITY_AVX512)
 #define SLEEF_STATIC_LIBS
 #include <sleef.h>
 #endif
@@ -1589,7 +1589,7 @@ inline Vectorized<type> convert_float_##name(const Vectorized<float>& a, const V
 CONVERT_NON_VECTORIZED_INIT(BFloat16, bfloat16);
 CONVERT_NON_VECTORIZED_INIT(Half, half);
 
-#endif // defined(CPU_CAPABILITY_AVX512) 
+#endif // defined(CPU_CAPABILITY_AVX512)
 
 #if defined(CPU_CAPABILITY_AVX512)
 #define LOAD_FP32_VECTORIZED_INIT(type, name) \

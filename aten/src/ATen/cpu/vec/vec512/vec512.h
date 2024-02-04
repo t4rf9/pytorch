@@ -55,7 +55,7 @@ std::ostream& operator<<(std::ostream& stream, const Vectorized<T>& vec) {
 }
 
 
-#if defined(CPU_CAPABILITY_AVX512) 
+#if defined(CPU_CAPABILITY_AVX512)
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CAST (AVX512) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
