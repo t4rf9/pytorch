@@ -1547,7 +1547,7 @@ if(MSVC)
     COMMAND ${CMAKE_COMMAND} -S ${TORCH_ROOT}/third_party/sleef -GNinja -DBUILD_SHARED_LIBS=OFF -DBUILD_DFT=OFF -DBUILD_GNUABI_LIBS=OFF -DBUILD_TESTS=OFF
     COMMAND ${CMAKE_COMMAND} --build . ${PARALLEL_ARGS}
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/sleef
-    COMMENT "Build sleef library." 
+    COMMENT "Build sleef library."
   )
   add_custom_target(sleef ALL DEPENDS ${CMAKE_BINARY_DIR}/sleef/lib/sleef.lib)
 
