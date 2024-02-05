@@ -1531,8 +1531,8 @@ endif()
 if(MSVC)
   # CMAKE_CXX_FLAGS and CMAKE_C_FLAGS are shared between all CMake project and
   # its sub-modules. sleef build will modify the CMAKE_CXX_FLAGS and CMAKE_C_FLAGS.
-  # Sleef lib need build as static lib and need setup to /MT, it shared to pytorch will
-  # caused the link conflict between /MD and /MT.
+  # Sleef lib need build as static lib and it will make pytorch caused the link
+  # conflict between /MD and /MT.
   # So, I split the sleef build to sub-process, and make it isolated to pytorch build.
   # TODO: Optimize CMake build @ sleef, and add sleef as submodule.
   set(PARALLEL_ARGS)
