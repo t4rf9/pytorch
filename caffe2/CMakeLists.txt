@@ -1529,16 +1529,30 @@ if(MSVC AND BUILD_SHARED_LIBS)
 endif()
 
 if(MSVC)
-  set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build sleef static" FORCE)
-  set(BUILD_DFT OFF CACHE BOOL "Don't build sleef DFT lib" FORCE)
-  set(BUILD_GNUABI_LIBS OFF CACHE BOOL "Don't build sleef gnuabi libs" FORCE)
-  set(BUILD_TESTS OFF CACHE BOOL "Don't build sleef tests" FORCE)
-  add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../third_party/sleef" ${CMAKE_BINARY_DIR}/sleef)
-  set_property(TARGET sleef PROPERTY FOLDER "dependencies")
+  # CMAKE_CXX_FLAGS and CMAKE_C_FLAGS are shared between all CMake project and
+  # its sub-modules. sleef build will modify the CMAKE_CXX_FLAGS and CMAKE_C_FLAGS.
+  # Sleef lib need build as static lib and need setup to /MT, it shared to pytorch will
+  # caused the link conflict between /MD and /MT.
+  # So, I split the sleef build to sub-process, and make it isolated to pytorch build.
+  set(PARALLEL_ARGS)
+  include(ProcessorCount)
+  ProcessorCount(N)
+  if(NOT N EQUAL 0)
+    set(PARALLEL_ARGS -j${N})
+  endif()
 
-  target_include_directories(torch_cpu PUBLIC ${CMAKE_BINARY_DIR}/include)
-  target_link_directories(torch_cpu PUBLIC ${CMAKE_BINARY_DIR}/sleef/lib)
-  target_link_libraries(torch_cpu PUBLIC sleef)
+  file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/sleef)
+  file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/sleef/include)
+  add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/sleef/lib/sleef.lib
+    COMMAND cmake -S ${TORCH_ROOT}/third_party/sleef -GNinja -DBUILD_SHARED_LIBS=OFF -DBUILD_DFT=OFF -DBUILD_GNUABI_LIBS=OFF -DBUILD_TESTS=OFF
+    COMMAND ninja ${PARALLEL_ARGS}
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/sleef
+    COMMENT "Build sleef library." 
+  )
+  add_custom_target(sleef ALL DEPENDS ${CMAKE_BINARY_DIR}/sleef/lib/sleef.lib)
+
+  include_directories(${CMAKE_BINARY_DIR}/sleef/include)
+  target_link_libraries(torch_cpu PUBLIC ${CMAKE_BINARY_DIR}/sleef/lib/sleef.lib)
   add_dependencies(torch_cpu sleef)
 endif()
 
