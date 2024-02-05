@@ -874,6 +874,7 @@ struct ApplyGridSample<scalar_t, 2, GridSamplerInterpolation::Bicubic,
     auto mask = cast<scalar_t>(mask_x & mask_y);
 
     auto offset = iy * iVec(inp_sH) + ix * iVec(inp_sW);
+
     auto val = mask_gather<sizeof(scalar_t)>(Vec(0), data, offset, mask);
     return val;
   }
