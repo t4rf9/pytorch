@@ -531,7 +531,7 @@ struct Vectorized<c10::qint8> : public Vectorizedqi {
       Vectorized<float> scale,
       Vectorized<float> zero_point,
       Vectorized<float> scale_neg_zp_premul) const {
-    #ifdef _MSC_VER
+    #if defined(_MSC_VER) && !defined(__clang__)
     __m128i int_val0 = _mm_set_epi64x(vals.m512i_u64[1], vals.m512i_u64[0]);
     __m128i int_val1 = _mm_set_epi64x(vals.m512i_u64[3], vals.m512i_u64[2]);
     __m128i int_val2 = _mm_set_epi64x(vals.m512i_u64[5], vals.m512i_u64[4]);
@@ -562,7 +562,7 @@ struct Vectorized<c10::qint8> : public Vectorizedqi {
   float_vec_return_type dequantize(
       Vectorized<float> scale,
       Vectorized<float> zero_point) const {
-    #ifdef _MSC_VER
+    #if defined(_MSC_VER) && !defined(__clang__)
     __m128i int_val0 = _mm_set_epi64x(vals.m512i_u64[1], vals.m512i_u64[0]);
     __m128i int_val1 = _mm_set_epi64x(vals.m512i_u64[3], vals.m512i_u64[2]);
     __m128i int_val2 = _mm_set_epi64x(vals.m512i_u64[5], vals.m512i_u64[4]);
@@ -618,7 +618,7 @@ struct Vectorized<c10::qint8> : public Vectorizedqi {
     }
 
     int_vec_return_type widening_subtract(Vectorized<c10::qint8> b) const {
-      #ifdef _MSC_VER
+      #if defined(_MSC_VER) && !defined(__clang__)
       __m128i int_val0 = _mm_set_epi64x(vals.m512i_u64[1], vals.m512i_u64[0]);
       __m128i int_val1 = _mm_set_epi64x(vals.m512i_u64[3], vals.m512i_u64[2]);
       __m128i int_val2 = _mm_set_epi64x(vals.m512i_u64[5], vals.m512i_u64[4]);
@@ -635,7 +635,7 @@ struct Vectorized<c10::qint8> : public Vectorizedqi {
       __m512i int32_val2 = cvtepi8_epi32(int_val2);
       __m512i int32_val3 = cvtepi8_epi32(int_val3);
 
-      #ifdef _MSC_VER
+      #if defined(_MSC_VER) && !defined(__clang__)
       __m128i int_b0 = _mm_set_epi64x(b.vals.m512i_u64[1], b.vals.m512i_u64[0]);
       __m128i int_b1 = _mm_set_epi64x(b.vals.m512i_u64[3], b.vals.m512i_u64[2]);
       __m128i int_b2 = _mm_set_epi64x(b.vals.m512i_u64[5], b.vals.m512i_u64[4]);
@@ -755,7 +755,7 @@ struct Vectorized<c10::quint8> : public Vectorizedqi {
       Vectorized<float> scale,
       Vectorized<float> zero_point,
       Vectorized<float> scale_zp_premul) const {
-    #ifdef _MSC_VER
+    #if defined(_MSC_VER) && !defined(__clang__)
     __m128i int_val0 = _mm_set_epi64x(vals.m512i_u64[1], vals.m512i_u64[0]);
     __m128i int_val1 = _mm_set_epi64x(vals.m512i_u64[3], vals.m512i_u64[2]);
     __m128i int_val2 = _mm_set_epi64x(vals.m512i_u64[5], vals.m512i_u64[4]);
@@ -787,7 +787,7 @@ struct Vectorized<c10::quint8> : public Vectorizedqi {
   float_vec_return_type dequantize(
       Vectorized<float> scale,
       Vectorized<float> zero_point) const {
-    #ifdef _MSC_VER
+    #if defined(_MSC_VER) && !defined(__clang__)
     __m128i int_val0 = _mm_set_epi64x(vals.m512i_u64[1], vals.m512i_u64[0]);
     __m128i int_val1 = _mm_set_epi64x(vals.m512i_u64[3], vals.m512i_u64[2]);
     __m128i int_val2 = _mm_set_epi64x(vals.m512i_u64[5], vals.m512i_u64[4]);
@@ -844,7 +844,7 @@ struct Vectorized<c10::quint8> : public Vectorizedqi {
     }
 
     int_vec_return_type widening_subtract(Vectorized<c10::quint8> b) const {
-      #ifdef _MSC_VER
+      #if defined(_MSC_VER) && !defined(__clang__)
       __m128i int_val0 = _mm_set_epi64x(vals.m512i_u64[1], vals.m512i_u64[0]);
       __m128i int_val1 = _mm_set_epi64x(vals.m512i_u64[3], vals.m512i_u64[2]);
       __m128i int_val2 = _mm_set_epi64x(vals.m512i_u64[5], vals.m512i_u64[4]);
@@ -861,7 +861,7 @@ struct Vectorized<c10::quint8> : public Vectorizedqi {
       __m512i int32_val2 = cvtepu8_epi32(int_val2);
       __m512i int32_val3 = cvtepu8_epi32(int_val3);
 
-      #ifdef _MSC_VER
+      #if defined(_MSC_VER) && !defined(__clang__)
       __m128i int_b0 = _mm_set_epi64x(b.vals.m512i_u64[1], b.vals.m512i_u64[0]);
       __m128i int_b1 = _mm_set_epi64x(b.vals.m512i_u64[3], b.vals.m512i_u64[2]);
       __m128i int_b2 = _mm_set_epi64x(b.vals.m512i_u64[5], b.vals.m512i_u64[4]);
