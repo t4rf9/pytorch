@@ -1732,7 +1732,10 @@ def _compare_onnx_and_torch_exported_program(
     # Thus, ONNXProgram() must run before ref_model() to prevent ref_model.forward() from changing the state_dict.
     # Otherwise, the ref_model can change buffers on state_dict which would be used by ONNXProgram.__call__()
     onnx_outputs = onnx_exported_program(*input_args, **input_kwargs)
-    torch_outputs = torch_exported_program(*input_args, **input_kwargs)
+    if isinstance(torch_exported_program, torch.export.ExportedProgram):
+        torch_outputs = torch_exported_program.module()(*input_args, **input_kwargs)
+    else:
+        torch_outputs = torch_exported_program(*input_args, **input_kwargs)
     torch_outputs_onnx_format = onnx_exported_program.adapt_torch_outputs_to_onnx(
         torch_outputs
     )

@@ -809,7 +809,7 @@ class TestExport(TestCase):
                 dynamic_shapes={"kjt": [{0: dim}, None, {0: dim}, {0: dim_plus_one}]},
             )
             self.assertEqual(
-                [out.shape for out in efoo(*inputs)],
+                [out.shape for out in efoo.module()(*inputs)],
                 [out.shape for out in foo(*inputs)]
             )
 
@@ -1237,8 +1237,7 @@ class TestExport(TestCase):
         self.assertExpectedInline(
             str(gm.code).strip(),
             """\
-def forward(self, arg_0):
-    arg7_1, = fx_pytree.tree_flatten_spec(([arg_0], {}), self._in_spec)
+def forward(self, arg7_1):
     conv_weight = self.conv.weight
     conv_bias = self.conv.bias
     bn_weight = self.bn.weight
@@ -1248,7 +1247,7 @@ def forward(self, arg_0):
     conv2d = torch.ops.aten.conv2d.default(arg7_1, conv_weight, conv_bias);  arg7_1 = conv_weight = conv_bias = None
     _native_batch_norm_legit_no_training = torch.ops.aten._native_batch_norm_legit_no_training.default(conv2d, bn_weight, bn_bias, bn_running_mean, bn_running_var, 0.1, 1e-05);  conv2d = bn_weight = bn_bias = bn_running_mean = bn_running_var = None
     getitem = _native_batch_norm_legit_no_training[0];  _native_batch_norm_legit_no_training = None
-    return pytree.tree_unflatten((getitem,), self._out_spec)""",
+    return (getitem,)""",
         )
 
         mod.train()
@@ -1256,8 +1255,7 @@ def forward(self, arg_0):
         self.assertExpectedInline(
             str(gm_train.code).strip(),
             """\
-def forward(self, arg_0):
-    arg7_1, = fx_pytree.tree_flatten_spec(([arg_0], {}), self._in_spec)
+def forward(self, arg7_1):
     conv_weight = self.conv.weight
     conv_bias = self.conv.bias
     bn_weight = self.bn.weight
@@ -1274,7 +1272,7 @@ def forward(self, arg_0):
     copy__default = torch.ops.aten.copy_.default(bn_running_mean, getitem_3);  bn_running_mean = getitem_3 = None
     copy__default_1 = torch.ops.aten.copy_.default(bn_running_var, getitem_4);  bn_running_var = getitem_4 = None
     copy__default_2 = torch.ops.aten.copy_.default(bn_num_batches_tracked, add);  bn_num_batches_tracked = add = None
-    return pytree.tree_unflatten((getitem,), self._out_spec)""",
+    return (getitem,)""",
         )
 
     @testing.expectedFailureNonStrict
@@ -2966,7 +2964,6 @@ def forward(self, arg0_1, arg1_1, arg2_1):
         m = MyModule()
         ep = export(m, (inp,), {})
 
-        self.assertEqual(ep(inp), m(inp))
         # Non-persistent buffers should not show up in the state dict
         self.assertNotIn("foo", ep.state_dict)
         named_buffers = {name: buffer for (name, buffer) in ep.named_buffers()}
@@ -3154,7 +3151,7 @@ def forward(self, arg0_1, arg1_1, arg2_1):
                 return [((1, 3), [x + x, x * x])]
 
         ep = torch.export.export(M(), (torch.ones(2, 3),))
-        res = ep(torch.ones(2, 3))
+        res = ep.module()(torch.ones(2, 3))
         self.assertEqual(res[0][0], (1, 3))
 
     def test_primitive_constant_output(self):
@@ -3163,7 +3160,7 @@ def forward(self, arg0_1, arg1_1, arg2_1):
                 return y * x
 
         ep = torch.export.export(Z(), (torch.tensor(3), 5))
-        res = ep(torch.tensor(4), 5)
+        res = ep.module()(torch.tensor(4), 5)
         self.assertEqual(res, torch.tensor(20))
 
         class B(torch.nn.Module):
@@ -3171,12 +3168,12 @@ def forward(self, arg0_1, arg1_1, arg2_1):
                 return y * x, y
 
         ep = torch.export.export(B(), (torch.tensor(3), 5))
-        res = ep(torch.tensor(4), 5)
+        res = ep.module()(torch.tensor(4), 5)
         self.assertEqual(res[0], torch.tensor(20))
         self.assertEqual(res[1], 5)
 
         with self.assertRaisesRegex(RuntimeError, escape("Expected input at *args[1] to be equal to 5, but got 20")):
-            res = ep(torch.tensor(4), 20)
+            res = ep.module()(torch.tensor(4), 20)
 
         class F(torch.nn.Module):
             def forward(self, x):
@@ -3185,7 +3182,7 @@ def forward(self, arg0_1, arg1_1, arg2_1):
                 return y * x, y
 
         ep = torch.export.export(F(), (torch.tensor(3),))
-        res = ep(torch.tensor(4))
+        res = ep.module()(torch.tensor(4))
         self.assertEqual(res[0], torch.tensor(20))
         self.assertEqual(res[1], 5)
 
@@ -3194,7 +3191,7 @@ def forward(self, arg0_1, arg1_1, arg2_1):
                 return y * x, y - 1
 
         ep = torch.export.export(Q(), (torch.tensor(3), 5))
-        res = ep(torch.tensor(4), 5)
+        res = ep.module()(torch.tensor(4), 5)
         self.assertEqual(res[0], torch.tensor(20))
         self.assertEqual(res[1], 4)
 
@@ -3204,7 +3201,7 @@ def forward(self, arg0_1, arg1_1, arg2_1):
                 return x * x
 
         ep = torch.export.export(Z(), (torch.tensor(3), None))
-        res = ep(torch.tensor(4), None)
+        res = ep.module()(torch.tensor(4), None)
         self.assertEqual(res, torch.tensor(16))
 
         class B(torch.nn.Module):
@@ -3212,12 +3209,12 @@ def forward(self, arg0_1, arg1_1, arg2_1):
                 return x * x, y
 
         ep = torch.export.export(B(), (torch.tensor(3), None))
-        res = ep(torch.tensor(4), None)
+        res = ep.module()(torch.tensor(4), None)
         self.assertEqual(res[0], torch.tensor(16))
         self.assertEqual(res[1], None)
 
         decomp = ep.run_decompositions()
-        res = decomp(torch.tensor(4), None)
+        res = decomp.module()(torch.tensor(4), None)
         self.assertEqual(res[0], torch.tensor(16))
         self.assertEqual(res[1], None)
 

@@ -17,22 +17,32 @@ from .exported_program import (
 
 
 @torch._dynamo.disable
-def _check_input_constraints_pre_hook(self, *args, **kwargs):
-    flat_args_with_path, received_spec = pytree.tree_flatten_with_path(args)
+def _preprocess_inputs(self, *args, **kwargs):
+    flat_args_with_path, in_spec = pytree.tree_flatten_with_path(args)
+    flat_args = [x[1] for x in flat_args_with_path]
 
-    if received_spec != self._in_spec:
+    if self._in_spec is not None and in_spec != self._in_spec:
         raise ValueError(  # noqa: TRY200
             "Trying to flatten user inputs with exported input tree spec: \n"
             f"{self._in_spec}\n"
             "but actually got inputs with tree spec of: \n"
-            f"{received_spec}"
+            f"{in_spec}"
         )
 
-    return _check_input_constraints_for_graph(
+    _check_input_constraints_for_graph(
         [node for node in self.graph.nodes if node.op == "placeholder"],
         flat_args_with_path,
         self.range_constraints,
     )
+
+    return tuple(flat_args), {}
+
+
+@torch._dynamo.disable
+def _postprocess_outputs(self, args, kwargs, out):
+    if self._out_spec is not None:
+        return pytree.tree_unflatten(out, self._out_spec)
+    return out
 
 
 def _unlift_inputs_as_getattr(
@@ -169,7 +179,7 @@ def _unlift(
     _insert_copy_for_mutations(
         gm, mutated_outputs, unlifted_name_to_node, input_name_to_node
     )
-    gm.graph._codegen = _get_codegen(in_spec, out_spec)
+    # gm.graph._codegen = _get_codegen(in_spec, out_spec)
     gm.graph.lint()
     gm.graph.eliminate_dead_code()
     gm.recompile()
@@ -224,19 +234,30 @@ class _StatefulGraphModuleFactory(type):
             f"{cls.__module__}.{cls.__qualname__} has no public constructor. "
         )
 
-    def _create(cls, root, graph, range_constraints=None):
+    def _create(cls, root, graph, range_constraints=None, in_spec=None, out_spec=None):
         return super().__call__(
             root,
             graph,
             range_constraints=range_constraints,
+            in_spec=in_spec,
+            out_spec=out_spec,
         )
 
 
 class _StatefulGraphModule(torch.fx.GraphModule, metaclass=_StatefulGraphModuleFactory):
-    def __init__(self, root, graph, range_constraints=None):
+    def __init__(
+        self,
+        root,
+        graph,
+        range_constraints=None,
+        in_spec=None,
+        out_spec=None,
+    ):
         super().__init__(root, graph)
         # Need to fix up non-persistent buffers.
         self.range_constraints = range_constraints or []
+        self._in_spec = in_spec
+        self._out_spec = out_spec
 
 
 def _create_stateful_graph_module(
@@ -245,15 +266,18 @@ def _create_stateful_graph_module(
     # TODO(suo) this should not be optional, but is since we still ahve
     # capture_pre_autograd_graph grr
     graph_signature: Optional[ExportGraphSignature] = None,
+    in_spec=None,
+    out_spec=None,
 ):
     stateful_gm = _StatefulGraphModule._create(
         plain_graph_module,
         plain_graph_module.graph,
         range_constraints=range_constraints,
+        in_spec=in_spec,
+        out_spec=out_spec,
     )
-    stateful_gm.register_forward_pre_hook(
-        _check_input_constraints_pre_hook, with_kwargs=True
-    )
+    stateful_gm.register_forward_pre_hook(_preprocess_inputs, with_kwargs=True)
+    stateful_gm.register_forward_hook(_postprocess_outputs, with_kwargs=True)
 
     if graph_signature is None:
         return stateful_gm
@@ -306,7 +330,11 @@ def _unlift_exported_program_lifted_states(ep: ExportedProgram) -> torch.nn.Modu
         ep.constants,
     )
     unlift_gm = _create_stateful_graph_module(
-        new_gm, ep.range_constraints, ep.graph_signature
+        new_gm,
+        ep.range_constraints,
+        ep.graph_signature,
+        ep.call_spec.in_spec,
+        ep.call_spec.out_spec,
     )
     unlift_gm.meta.update(ep.graph_module.meta)
     return unlift_gm
