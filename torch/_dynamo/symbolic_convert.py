@@ -341,6 +341,19 @@ def generic_jump(truth_fn: typing.Callable[[object], bool], push: bool):
                 self.jump(inst)
                 return
 
+            if isinstance(value, SymNodeVariable):
+                # if the assertion is normal shape expression.
+                # just install guard and bail out.
+                result = torch.fx.experimental.symbolic_shapes.expect_true(
+                    value.sym_num
+                )
+                if not result:
+                    raise unimplemented(
+                        "Assertion failed on symbolic shapes. Did you make sure eager mode succeeds?"
+                    )
+                self.jump(inst)
+                return
+
             scalar_to_tensor_proxy = self.output.create_proxy(
                 "call_function", torch.scalar_tensor, *proxy_args_kwargs((value,), {})
             )
