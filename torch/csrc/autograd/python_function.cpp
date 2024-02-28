@@ -131,8 +131,7 @@ PyObject* to_py_size(const std::vector<c10::SymInt>& size) {
 
 } // namespace
 
-namespace torch {
-namespace autograd {
+namespace torch::autograd {
 
 // NOTE: this function is written in a way that assumes it's only called for
 // backward; it's used by engine.cpp.  This is responsible for forwarding a call
@@ -302,10 +301,10 @@ void PyNode::compiled_args(CompiledNodeArgs& args) {
     throw_python_error();
   TORCH_CHECK(
       PyTuple_CheckExact(pykey.get()),
-      "_compiled_autograd_key shoud return tuple of ints");
+      "_compiled_autograd_key should return tuple of ints");
   auto size = PyTuple_GET_SIZE(pykey.get());
   TORCH_INTERNAL_ASSERT(size > 0);
-  // first value is unique ID of the AotAutograd graph
+  // first value is unique id managed by AUTOGRAD_FUNCTION_COUNTER
   auto key = PyLong_AsSsize_t(PyTuple_GET_ITEM(pykey.get(), 0));
   if (C10_UNLIKELY(key < 0)) {
     TORCH_CHECK(PyErr_Occurred(), "key must be positive");
@@ -445,8 +444,7 @@ variable_list PyNode::to_variable_list(
   return results;
 }
 
-} // namespace autograd
-} // namespace torch
+} // namespace torch::autograd
 
 // Traverse and clear are required for supporting Python's GC cycle handling.
 static int THPFunction_traverse(THPFunction* self, visitproc visit, void* arg) {
@@ -887,7 +885,7 @@ std::pair<UnpackedInput, InputFlags> unpack_input(PyObject* args) {
       PyObject* needs_grad = tensor.requires_grad() ? Py_True : Py_False;
       Py_INCREF(needs_grad);
       PyTuple_SET_ITEM(flags.needs_input_grad.get(), i, needs_grad);
-      unpacked.record_function_inputs.push_back(tensor);
+      unpacked.record_function_inputs.emplace_back(tensor);
     }
     Py_INCREF(arg);
     PyTuple_SET_ITEM(unpacked.input_tuple.get(), i, arg);
