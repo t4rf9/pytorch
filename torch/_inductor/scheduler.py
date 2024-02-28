@@ -1525,7 +1525,7 @@ class Scheduler:
 
         # make sure input mutation isn't dead-code-eliminated
         for name in self.mutation_renames:
-            if name in V.graph.graph_inputs:
+            if name in V.graph.graph_inputs or name in V.graph.mutated_buffers:
                 add_user(name, OutputNode(StarDep(name)))
                 V.graph.mutated_inputs.add(name)
 
@@ -1533,7 +1533,7 @@ class Scheduler:
             name: index for index, name in enumerate(V.graph.graph_inputs.keys())
         }
         V.graph.mutated_input_idxs = [
-            inp_names[name] for name in V.graph.mutated_inputs
+            inp_names[name] for name in V.graph.mutated_inputs if name in inp_names
         ]
 
         # copy users information onto the nodes
