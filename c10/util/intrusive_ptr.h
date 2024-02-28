@@ -393,9 +393,6 @@ class intrusive_ptr final {
   }
 
   intrusive_ptr& operator=(const intrusive_ptr& rhs) & noexcept {
-    if (this == &rhs) {
-      return *this;
-    }
     // NOLINTNEXTLINE(*assign-operator, *assignment-signature)
     return operator= <TTarget, NullType>(rhs);
   }
