@@ -1474,11 +1474,6 @@ class GuardManager {
     // accessor_key type depends on the GuardAccessorT
     // for example for GetAttrGuardAccessor - py::str name
 
-    // Check that we are not trying to add an accessor for DictGuardManager
-    if (_is_dict_guard_manager()) {
-      throw std::runtime_error("Can not add an accessor to DictGuardManager");
-    }
-
     // Return the manager if the guard accessor exists
     for (const auto& accessor : _accessors) {
       if (accessor->matches_key(accessor_key)) {
@@ -1932,7 +1927,9 @@ class KeyValueDictGuardManager : public GuardManager {
 class DictGuardManager : public GuardManager {
  public:
   DictGuardManager(RootGuardManager* root, py::handle example_value)
-      : GuardManager(root), _size(PyDict_Size(example_value.ptr())) {}
+      : GuardManager(root),
+        _size(PyDict_Size(example_value.ptr())),
+        _is_exact_dict_type(PyDict_CheckExact(example_value.ptr())) {}
 
   /**
    * Adds a new KeyDictGuardAccessor. If the accessor is already present, we
@@ -1964,6 +1961,20 @@ class DictGuardManager : public GuardManager {
 
     if (PyDict_Size(obj) != _size) {
       _fail_count += 1;
+      return false;
+    }
+
+    // Invokes the base class's check_nopybind method. We permit a limited set
+    // of leaf guards and accessors within the DictGuardManager framework.
+    // Integrating certain guards or accessors directly within the
+    // DictGuardManager can be challenging. For instance, `type(dict_object)` as
+    // an accessor is permissible, which otherwise would be hard to integrate
+    // directly into DictGuardManager.  Similarly, incorporating guards such as
+    // DICT_CONTAINS and DICT_VERSION as leaf guards offers a simpler solution
+    // than embedding these functionalities within the DictGuardManager itself.
+    if (!GuardManager::check_nopybind(obj)) {
+      _fail_count += 1;
+      // No need to shuffle the child guards, just return.
       return false;
     }
 
@@ -2000,6 +2011,19 @@ class DictGuardManager : public GuardManager {
       return GuardDebugInfo(false, "len(dict) does not match", 0);
     }
 
+    // Invokes the base class's check_nopybind method. We permit a limited set
+    // of leaf guards and accessors within the DictGuardManager framework.
+    // Integrating certain guards or accessors directly within the
+    // DictGuardManager can be challenging. For instance, `type(dict_object)` as
+    // an accessor is permissible, which otherwise would be hard to integrate
+    // directly into DictGuardManager.  Similarly, incorporating guards such as
+    // DICT_CONTAINS and DICT_VERSION as leaf guards offers a simpler solution
+    // than embedding these functionalities within the DictGuardManager itself.
+    GuardDebugInfo debug_info = GuardManager::check_verbose_nopybind(obj);
+    if (!debug_info.result) {
+      return debug_info;
+    }
+
     PyObject *key, *value;
     Py_ssize_t pos = 0;
 
@@ -2027,11 +2051,30 @@ class DictGuardManager : public GuardManager {
     return GuardDebugInfo(true, num_guards_executed);
   }
 
+  void skip_adding_guard(py::object a, py::object b) {
+    // The `add_leaf_guard` method in `DictGuardManager` is overridden to block
+    // the addition of leaf guards. However, this is too strict. Python side of
+    // guard management frequently adds TYPE_MATCH and DICT_LENGTH on
+    // DictGuardManager. We could refactor Python side to never call these
+    // guards on dict objects, but that results in messy code. Instead, we just
+    // override these two guards to not go through add_leaf_guard code path and
+    // skip adding guards. This makes the python side easy.
+  }
+
+  void fail_on_get_child_manager(py::object a, py::object b) {
+    throw std::runtime_error("Can not add an accessor to DictGuardManager");
+  }
+
   void add_leaf_guard(std::shared_ptr<LeafGuard> leaf_guard) override {
     // If you are calling this, you probably want to go through a key, value
     // child manager and then add a leaf guard on them. DictGuardManager already
     // has TYPE_MATCH and LENGTH_CHECK built in.
     throw std::runtime_error("DictGuardManager does not support a leaf_guard");
+  }
+
+  void add_permitted_leaf_guard(std::shared_ptr<LeafGuard> leaf_guard) {
+    // Selectively called for permitted guards.
+    GuardManager::add_leaf_guard(std::move(leaf_guard));
   }
 
   // Debug helper - Nobody should call this. Call child_managers to directly get
@@ -2051,6 +2094,10 @@ class DictGuardManager : public GuardManager {
     return ret;
   }
 
+  bool is_exact_dict_type() {
+    return _is_exact_dict_type;
+  }
+
  private:
   bool _is_dict_guard_manager() override {
     return true;
@@ -2058,6 +2105,7 @@ class DictGuardManager : public GuardManager {
 
  private:
   Py_ssize_t _size;
+  bool _is_exact_dict_type; // Useful to check getattr_manager validity.
   std::vector<Py_ssize_t> _indices;
   std::unordered_map<Py_ssize_t, std::unique_ptr<KeyValueDictGuardManager>>
       _key_value_managers;
@@ -3002,6 +3050,47 @@ PyObject* torch_c_dynamo_guards_init() {
       .def(
           "get_key_value_manager",
           &DictGuardManager::get_key_value_manager,
+          py::return_value_policy::reference)
+      // Skipped leaf guards
+      .def("add_type_match_guard", &DictGuardManager::skip_adding_guard)
+      .def("add_length_check_guard", &DictGuardManager::skip_adding_guard)
+      // Permitted leaf guards
+      .def(
+          "add_dict_contains_guard",
+          [](DictGuardManager& self,
+             bool contains,
+             py::object key,
+             py::object verbose_code_parts) -> void {
+            self.add_permitted_leaf_guard(std::make_shared<DICT_CONTAINS>(
+                contains, key, verbose_code_parts));
+          })
+      // Not permitted accesssors
+      .def("lambda_manager", &DictGuardManager::fail_on_get_child_manager)
+      .def("getitem_manager", &DictGuardManager::fail_on_get_child_manager)
+      .def("dict_getitem_manager", &DictGuardManager::fail_on_get_child_manager)
+      .def("globals_dict_manager", &DictGuardManager::fail_on_get_child_manager)
+      .def(
+          "tuple_iterator_getitem_manager",
+          &DictGuardManager::fail_on_get_child_manager)
+      .def(
+          "global_weakref_manager",
+          &DictGuardManager::fail_on_get_child_manager)
+      .def("lambda_manager", &DictGuardManager::fail_on_get_child_manager)
+      // Permitted accessors (and also type_manager)
+      // return by reference because GuardManager has the ownership of accessors
+      // and guard managers
+      .def(
+          "getattr_manager",
+          [](DictGuardManager& self,
+             py::object attr_name,
+             py::handle example_value) -> GuardManager* {
+            if (self.is_exact_dict_type()) {
+              std::runtime_error(
+                  "getattr_manager on a DictGuardManager is supported only for dict subclasses");
+            }
+            return self.get_child_manager<GetAttrGuardAccessor>(
+                attr_name, example_value);
+          },
           py::return_value_policy::reference);
 
   // Dict key value guard Manager
