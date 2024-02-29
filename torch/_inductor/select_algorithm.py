@@ -709,13 +709,24 @@ class ExternKernelCaller(ChoiceCaller):
         )
 
     def output_node(self):
-        cls: Union[Type[ir.ExternKernelOut], Type[ir.ExternKernelAlloc]]
-        if self.has_out_variant:
-            cls = ir.ExternKernelOut
+        if config.abi_compatible:
+            op = self.choice.to_callable()
+            if isinstance(op, torch._ops.OpOverloadPacket):
+                # Resolve base operator i.e. OpOverload
+                op = next(getattr(op, overload) for overload in op.overloads())
+
+            inner = ir.FallbackKernel.create(
+                self.choice.to_callable().default,
+                *self.input_nodes,
+                **self.kwargs
+            )
         else:
-            cls = ir.ExternKernelAlloc
-        return ir.TensorBox.create(
-            cls(
+            cls = (
+                ir.ExternKernelOut
+                if self.has_out_variant
+                else ir.ExternKernelAlloc
+            )
+            inner = cls(
                 layout=self.layout,
                 inputs=self.input_nodes,
                 python_kernel_name=self.choice.call_name(),
@@ -723,7 +734,8 @@ class ExternKernelCaller(ChoiceCaller):
                 ordered_kwargs_for_cpp_kernel=self.choice.ordered_kwargs_for_cpp_kernel,
                 kwargs=self.kwargs,
             )
-        )
+
+        return ir.TensorBox.create(inner)
 
 
 class ErrorFromChoice(RuntimeError):
