@@ -1557,6 +1557,21 @@ if(MSVC AND 0)
   add_dependencies(torch_cpu sleef)
 endif()
 
+if(MSVC)
+  set(SLEEF_BUILD_SHARED_LIBS OFF CACHE BOOL "Build sleef static" FORCE)
+  set(SLEEF_BUILD_DFT OFF CACHE BOOL "Don't build sleef DFT lib" FORCE)
+  set(SLEEF_BUILD_GNUABI_LIBS OFF CACHE BOOL "Don't build sleef gnuabi libs" FORCE)
+  set(SLEEF_BUILD_TESTS OFF CACHE BOOL "Don't build sleef tests" FORCE)
+  set(SLEEF_BUILD_SCALAR_LIB OFF CACHE BOOL "libsleefscalar will be built." FORCE)
+  set(sleef_BINARY_DIR ${CMAKE_BINARY_DIR}/sleef/build)
+  set(sleef_SOURCE_DIR ${CMAKE_BINARY_DIR}/sleef/)
+
+  add_subdirectory("${TORCH_ROOT}/third_party/sleef_fork" ${CMAKE_BINARY_DIR}/sleef)
+  include_directories(${CMAKE_BINARY_DIR}/sleef/build/include)
+  link_directories(${CMAKE_BINARY_DIR}/sleef/lib)
+  target_link_libraries(torch_cpu PUBLIC ${CMAKE_BINARY_DIR}/sleef/lib/sleef.lib)
+endif()
+
 caffe2_interface_library(torch_cpu torch_cpu_library)
 
 if(USE_CUDA)
