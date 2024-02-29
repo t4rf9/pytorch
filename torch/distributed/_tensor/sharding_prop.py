@@ -277,6 +277,7 @@ class ShardingPropagator:
                 # runtime selected placement strategy for each TupleStrategy input arg
                 selected_strategies: List[PlacementStrategy] = []
                 out_spec_list: List[DTensorSpec] = []
+                output_strategy_list: List[PlacementStrategy] = []
                 for strategy in op_strategy.childs:
                     assert isinstance(strategy, OpStrategy)
                     selected_strategy = self._select_strategy(strategy)
