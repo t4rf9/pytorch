@@ -419,15 +419,17 @@ if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(s390x|ppc64le)$")
   list(APPEND ATen_CPU_DEPENDENCY_LIBS cpuinfo)
 endif()
 
-if(0 AND NOT EMSCRIPTEN AND NOT INTERN_BUILD_MOBILE)
-  # Bump up optimization level for sleef to -O1, since at -O0 the compiler
-  # excessively spills intermediate vector registers to the stack
-  # and makes things run impossibly slowly
-  set(OLD_CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-  if(${CMAKE_C_FLAGS_DEBUG} MATCHES "-O0")
-    string(REGEX REPLACE "-O0" "-O1" CMAKE_C_FLAGS_DEBUG ${OLD_CMAKE_C_FLAGS_DEBUG})
-  else()
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O1")
+if(NOT EMSCRIPTEN AND NOT INTERN_BUILD_MOBILE)
+  if(NOT MSVC)
+    # Bump up optimization level for sleef to -O1, since at -O0 the compiler
+    # excessively spills intermediate vector registers to the stack
+    # and makes things run impossibly slowly
+    set(OLD_CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+    if(${CMAKE_C_FLAGS_DEBUG} MATCHES "-O0")
+      string(REGEX REPLACE "-O0" "-O1" CMAKE_C_FLAGS_DEBUG ${OLD_CMAKE_C_FLAGS_DEBUG})
+    else()
+      set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O1")
+    endif()
   endif()
 
   if(NOT USE_SYSTEM_SLEEF)
@@ -456,7 +458,6 @@ if(0 AND NOT EMSCRIPTEN AND NOT INTERN_BUILD_MOBILE)
     set_target_properties(sleef PROPERTIES IMPORTED_LOCATION "${SLEEF_LIBRARY}")
   endif()
   list(APPEND ATen_CPU_DEPENDENCY_LIBS sleef)
-  message("!!!!! ATen_CPU_DEPENDENCY_LIBS: ${ATen_CPU_DEPENDENCY_LIBS}")
 endif()
 
 if(USE_CUDA AND NOT USE_ROCM)
