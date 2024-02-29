@@ -1749,6 +1749,10 @@ def is_storage_and_layout(x):
 def is_contiguous_storage_and_layout(x):
     try:
         buffer, layout = as_storage_and_layout(x, freeze=False)
+        # pad the stride here so we will NOT claim an tensor as contiguous
+        # if a padding is gonna happen.
+        if layout.should_pad_strides():
+            layout.pad_strides()
         return layout.is_contiguous()
     except NotImplementedError:
         return False
@@ -2534,7 +2538,28 @@ class Layout(IRNode):
         order = [len(order)] + order
         return self.is_stride_ordered(order)
 
+    def pad_strides(self, align=16):
+        """
+        TODO: maybe we should pad high dimension more if the low dimensions
+        have also been padded.
+        """
+        new_stride = []
+        assert self._stride is not None
+        for s in self._stride:
+            if s > 1 and s % align != 0:
+                s = (s + align - 1) // align * align
+            new_stride.append(s)
+        self._stride = new_stride
+
+    def should_pad_strides(self):
+        return config.comprehensive_padding and isinstance(self, FlexibleLayout)
+
     def as_fixed(self):
+        if isinstance(self, FixedLayout):
+            return self
+
+        if self.should_pad_strides():
+            self.pad_strides()
         return FixedLayout(
             self.device,
             self.dtype,
