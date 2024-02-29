@@ -75,6 +75,7 @@ from .utils import (
     sympy_subs,
 )
 from .virtualized import ops, V
+from torch.fx.immutable_collections import immutable_list
 
 if TYPE_CHECKING:
     from .graph import GraphLowering
@@ -5130,7 +5131,7 @@ class MultiOutput(ExternKernel):
     def codegen_list_tuple_access(self, basename, indices):
         if len(indices) > 0:
             itype, i = indices[0]
-            if itype == list:
+            if itype == list or itype == immutable_list:
                 return self.codegen_list_tuple_access(f"{basename}[{i}]", indices[1:])
             elif itype == tuple:
                 # cpp wrapper code needs to use std::get<> to access a tuple
@@ -5141,7 +5142,7 @@ class MultiOutput(ExternKernel):
             elif itype == dict:
                 return self.codegen_list_tuple_access(f"{basename}['{i}']", indices[1:])
             else:
-                raise AssertionError("non supported index type")
+                raise AssertionError(f"non supported index type: {itype}")
         else:
             return basename
 
