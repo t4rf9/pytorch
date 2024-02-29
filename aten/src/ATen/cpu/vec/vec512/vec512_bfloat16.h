@@ -346,11 +346,11 @@ public:
   #pragma clang diagnostic ignored "-Wignored-qualifiers"
 
 #ifdef _MSC_VER
-#define SLEEF_CONST
+#define TORCH_SLEEF_CONST
 #else
-#define SLEEF_CONST const
+#define TORCH_SLEEF_CONST const
 #endif
-  Vectorized<T> map(SLEEF_CONST __m512 (*SLEEF_CONST vop)(__m512)) const {
+  Vectorized<T> map(TORCH_SLEEF_CONST __m512 (*TORCH_SLEEF_CONST vop)(__m512)) const {
     __m512 lo, hi;
     cvt_to_fp32<T>(values, lo, hi);
     const auto o1 = vop(lo);
