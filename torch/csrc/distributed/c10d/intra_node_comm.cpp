@@ -299,6 +299,10 @@ c10::intrusive_ptr<IntraNodeComm> IntraNodeComm::rendezvous(
     return nullptr;
   }
 
+  if (bufferSize == 0) {
+    bufferSize = kDefaultBufferSize;
+  }
+
   auto deviceIdx = at::cuda::current_device();
   c10::cuda::CUDAGuard guard(deviceIdx);
 
