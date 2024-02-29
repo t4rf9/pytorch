@@ -1528,7 +1528,7 @@ if(MSVC AND BUILD_SHARED_LIBS)
   target_compile_options(torch_cpu PRIVATE "-DONNX_BUILD_MAIN_LIB")
 endif()
 
-if(MSVC)
+if(MSVC AND 0)
   # CMAKE_CXX_FLAGS and CMAKE_C_FLAGS are shared between all CMake project and
   # its sub-modules. sleef build will modify the CMAKE_CXX_FLAGS and CMAKE_C_FLAGS.
   # Sleef lib need build as static lib and it will make pytorch caused the link
