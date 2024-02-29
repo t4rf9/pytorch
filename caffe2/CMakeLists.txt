@@ -1557,7 +1557,7 @@ if(MSVC AND 0)
   add_dependencies(torch_cpu sleef)
 endif()
 
-if(0 AND MSVC)
+if(MSVC)
   set(SLEEF_BUILD_SHARED_LIBS OFF CACHE BOOL "Build sleef static" FORCE)
   set(SLEEF_BUILD_DFT OFF CACHE BOOL "Don't build sleef DFT lib" FORCE)
   set(SLEEF_BUILD_GNUABI_LIBS OFF CACHE BOOL "Don't build sleef gnuabi libs" FORCE)
