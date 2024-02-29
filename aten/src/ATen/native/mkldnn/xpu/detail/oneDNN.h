@@ -6,3 +6,5 @@
 #include <Utils.h>
 
 #include <Matmul.h>
+#include <Conv.h>
+#include <Deconv.h>
