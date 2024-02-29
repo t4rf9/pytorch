@@ -268,7 +268,7 @@ public:
   }
 
 #ifdef _MSC_VER
-#define TORCH_TORCH_SLEEF_CONST
+#define TORCH_SLEEF_CONST
 #else
 #define TORCH_SLEEF_CONST const
 #endif
